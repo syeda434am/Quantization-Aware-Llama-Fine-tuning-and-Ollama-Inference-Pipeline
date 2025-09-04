@@ -1,4 +1,3 @@
-
 # Llama Model Fine-Tuning & Deployment Utility
 
 This repository provides a complete workflow for fine-tuning, quantizing, and deploying Llama-based large language models (LLMs) using Docker, and Google Cloud Platform (GCP). It is designed for scalable, cloud-based training and efficient model serving.
@@ -40,11 +39,11 @@ This repository provides a complete workflow for fine-tuning, quantizing, and de
 
 1. Build the Docker image:
   ```sh
-  docker build -t <your-registry>/llm-utility:latest .
+  docker build -t <your-registry>/repo-name:latest .
   ```
 2. Push the image to your registry:
   ```sh
-  docker push <your-registry>/llm-utility:latest
+  docker push <your-registry>/repo-name:latest
   ```
 
 ### 2. Fine-Tune the Model
