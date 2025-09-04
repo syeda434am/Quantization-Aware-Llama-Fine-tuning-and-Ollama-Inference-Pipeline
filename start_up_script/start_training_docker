@@ -1,0 +1,48 @@
+#!/bin/bash
+# THIS BASH SCRIPT RUN TRAINING DOCKER
+
+# Automatically retrieve the GCP project ID from the instance metadata
+GCP_PROJECT_ID=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/project/project-id)
+INSTANCE_NAME=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/name)
+INSTANCE_ZONE=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone | awk -F/ '{print $4}')
+SERVICE_ACCOUNT_JSON=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/attributes/SERVICE_ACCOUNT_JSON)
+
+# Set the GCP Container Registry image name
+DOCKER_IMAGE="us-central1-docker.pkg.dev/$GCP_PROJECT_ID/fine-tuned-llm-models/fine-tuned-llm-models"
+DOCKER_TAG="latest"  # or specify a specific tag if needed
+
+# Check if the required environment variables are set
+if [[ -z "$GCP_PROJECT_ID" || -z "$INSTANCE_NAME" || -z "$INSTANCE_ZONE" ]]; then
+  echo "Error: Unable to extract GCP project, instance name, or zone information."
+  exit 1
+fi
+
+# Clean up old Docker resources
+echo "Pruning old Docker containers and images..."
+docker system prune -f
+
+gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+# Pull the latest version of the Docker image from GCP Container Registry
+echo "Pulling the latest Docker image: $DOCKER_IMAGE:$DOCKER_TAG"
+if ! docker pull $DOCKER_IMAGE:$DOCKER_TAG; then
+  echo "Error: Failed to pull Docker image: $DOCKER_IMAGE:$DOCKER_TAG"
+  exit 1
+fi
+
+# Run the Docker container with GPU access, passing the GCP project ID, instance name, and zone as environment variables
+echo "Running Docker container: $DOCKER_IMAGE:$DOCKER_TAG"
+docker run --rm \
+    --gpus all \
+    -e GCP_PROJECT_ID="$GCP_PROJECT_ID" \
+    -e INSTANCE_NAME="$INSTANCE_NAME" \
+    -e INSTANCE_ZONE="$INSTANCE_ZONE" \
+    -e SERVICE_ACCOUNT_JSON="$SERVICE_ACCOUNT_JSON" \
+    $DOCKER_IMAGE:$DOCKER_TAG &
+
+# Wait for the Docker container to finish
+wait $!
+
+# Shutdown the host machine after the container finishes
+echo "Shutting down the host machine..."
+sudo shutdown -h now

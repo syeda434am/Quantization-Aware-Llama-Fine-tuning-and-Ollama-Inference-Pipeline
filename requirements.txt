@@ -1,0 +1,13 @@
+torch
+transformers
+datasets
+jsonlines
+numpy
+scipy
+huggingface-hub
+tqdm
+optimum
+accelerate
+docker
+google-cloud-storage
+google-cloud-compute
